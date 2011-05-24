@@ -1,0 +1,167 @@
+swcv - ActionScript 3 SWC Package Dependency Validator
+
+SUMMARY
+
+SWC Validator or swcv is a command line tool that can verify whether or not
+internal package dependencies of an Actionscript 3 SWC agree with a 
+specified architecture.
+
+WHY?
+
+Describing the use case that prompted the development of swcv is the best
+way to explain it's existence.
+
+A very large SWC or library may consist of several subsystems. Each subsystem
+is defined by one or more Actionscript 3 packages. The architecture is such 
+that subsystem B can use classes and methods from subsystem A, but subsystem
+A should never know about or access subsystem B. To enforce the architecture,
+subsystem A must be compiled to a SWC, subsystem B must be compiled into a
+SWC and linked to subsystem A SWC and finally, the subsystem SWCs are 
+bundled into the final library SWC.
+
+Since the Actionscript 3 compiler is very expensive to invoke, a library 
+with many subsystems can take a very long time to build. In addition, with
+most build systems, expressing the subsystem dependencies can be cumbersome.
+
+In the above use case, swcv can be used to eliminate the need for 
+intermediate compilation steps to enforce an architecture. All the source
+files for a library can be submitted to the compiler to produce the SWC.
+The SWC and a subsystem dependency specification (simple comma
+delimited text) can be run through swcv to validate the architectural
+integrity of the library.
+
+HOW?
+
+An Actionscript 3 SWC contains a file called catalog.xml that lists
+all of the exported symbols (class, constant, method, etc). Each 
+exported symbol has a list of it's dependent symbols. Dependent symbols
+can be defined in the SWC or they may be defined externally. External
+symbols are ignored, because swcv only validates the internal 
+architecture of the SWC (external dependencies should be validated
+by your build system).
+
+swcv gathers all of the SWC exports and dependencies, grouping them 
+by package. The user supplies a package dependency order specification,
+describing the architecture of the internal packages. Based on the
+specification, swcv ranks each package. A package cannot reference 
+symbols in a higher ranked package.
+
+For each package in the SWC, swcv gets the package rank. Then, each
+(internal) dependency in the package is ranked. If the rank of a 
+dependency is greater than the containing package, the package 
+dependency order is broken.
+
+USAGE
+
+java -jar swcv.jar <swcfile> [OPTIONS]
+
+Options (pick one):
+
+--pkg-order-file <pkgorderfile>
+
+--pkg-order pkgordertext
+
+--pkg-report
+
+EXAMPLES
+
+1) Validate a SWC using a package dependency order file.
+
+java -jar swcv.jar libraryX.swc --pkg-order-file libraryY.pkgorder
+
+libraryY.pkgorder file contents:
+pkg.e,
+pkg.f,
+pkg.g
+
+2) Validate a SWC using a package dependency order string argument.
+
+java -jar swcv.jar libraryY.swc --pkg-order "pkg.a, (pkg.b, pkg.c), pkg.d"
+
+3) Show package information for a SWC.
+
+java -jar swcv.jar libraryZ.swc --pkg-report
+
+PACKAGE DEPENDENCY ORDER
+
+The package dependency order specification is a simple comma separated 
+list of packages. The specification can be placed in a file or passed in
+as a command line argument. Here are the rules for package order dependency 
+specifications:
+
+    - Packages should always be defined using the dotted package 
+      name notation.
+      
+      Example: "a.b.c.d"
+      
+    - Packages are comma delimited.
+    
+      Example: "pkg.a, pkg.b"
+      
+    - Order matters. Packages that appear earlier in the list 
+      cannot depend on packages that appear later in the list.
+      
+      Example: "pkg.a, pkg.b"
+      
+      In the above example, the specification says: pkg.a cannot
+      reference symbols from pkg.b.
+      
+    - Packages can be grouped with parentheses, indicating that 
+      they are equivalent in terms of order.
+    
+      Example: "pkg.a, (pkg.b, pkg.c), pkg.d"
+      
+      In the above example, pkg.a cannot depend on pkg.b, pkg.c nor
+      pkg.d. pkg.b can depend on pkg.c and vice versa, but neither
+      pkg.b or pkg.c can depend on pkg.d.
+      
+    - Every package in the SWC must appear in the package dependency order.
+    
+    - Use "default" to describe the default package.
+    
+      Example: "pkg.a, default"
+    
+    - Whitespace, including line breaks, are ignored.
+
+INSTALL/BUILD
+
+The swcv.jar binary is checked into source root's bin directory.
+
+swcv was built with eclipse and I was too lazy to setup a build.xml for it.
+
+LICENSE
+
+swcv is licensed under the terms of the MIT license reproduced below.
+This means that swcv is free software and can be used for both academic
+and commercial purposes at absolutely no cost.
+
+Copyright (C) 2011 by Daniel Anderson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+AUTHOR
+
+Daniel Anderson
+dan.anderson.oss @ gmail.com
+
+TODO/NOTES
+
+- Consider using xml for package dependency order file.
+- Consider writing unit tests.
+- Use ant to build the software.
